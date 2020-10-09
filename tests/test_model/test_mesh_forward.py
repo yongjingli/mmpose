@@ -101,7 +101,7 @@ def test_parametric_mesh_forward():
         fake_label_val=0.0,
         loss_weight=1)
 
-    optimizers_config['disc'] = dict(type='Adam', lr=0.0001)
+    optimizers_config['discriminator'] = dict(type='Adam', lr=0.0001)
 
     detector = ParametricMesh(**model_cfg)
     detector.init_weights()

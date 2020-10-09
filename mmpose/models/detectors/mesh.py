@@ -70,7 +70,7 @@ class ParametricMesh(BasePose):
 
         self.with_gan = disc is not None and loss_gan is not None
         if self.with_gan:
-            self.disc = SMPLDiscriminator(**disc)
+            self.discriminator = SMPLDiscriminator(**disc)
             self.loss_gan = builder.build_loss(loss_gan)
         self.disc_step_count = 0
 
@@ -85,7 +85,7 @@ class ParametricMesh(BasePose):
         self.backbone.init_weights(pretrained)
         self.mesh_head.init_weights()
         if self.with_gan:
-            self.disc.init_weights()
+            self.discriminator.init_weights()
 
     def train_step(self, data_batch, optimizer, **kwargs):
         """Train step function.
@@ -117,15 +117,15 @@ class ParametricMesh(BasePose):
 
         # optimize discriminator (if have)
         if self.train_cfg['disc_step'] > 0 and self.with_gan:
-            set_requires_grad(self.disc, True)
+            set_requires_grad(self.discriminator, True)
             fake_data = (pred_camera.detach(), pred_pose.detach(),
                          pred_beta.detach())
             mosh_theta = data_batch['mosh_theta']
             real_data = (mosh_theta[:, :3], mosh_theta[:,
                                                        3:75], mosh_theta[:,
                                                                          75:])
-            fake_score = self.disc(fake_data)
-            real_score = self.disc(real_data)
+            fake_score = self.discriminator(fake_data)
+            real_score = self.discriminator(real_data)
 
             disc_losses = {}
             disc_losses['real_loss'] = self.loss_gan(
@@ -134,9 +134,9 @@ class ParametricMesh(BasePose):
                 fake_score, target_is_real=False, is_disc=True)
             loss_disc, log_vars_d = self._parse_losses(disc_losses)
 
-            optimizer['disc'].zero_grad()
+            optimizer['discriminator'].zero_grad()
             loss_disc.backward()
-            optimizer['disc'].step()
+            optimizer['discriminator'].step()
             self.disc_step_count = \
                 (self.disc_step_count + 1) % self.train_cfg['disc_step']
 
@@ -180,9 +180,9 @@ class ParametricMesh(BasePose):
         losses = self.loss_mesh(pred, target)
 
         if self.with_gan:
-            set_requires_grad(self.disc, False)
+            set_requires_grad(self.discriminator, False)
             pred_theta = (pred_camera, pred_pose, pred_beta)
-            pred_score = self.disc(pred_theta)
+            pred_score = self.discriminator(pred_theta)
             loss_adv = self.loss_gan(
                 pred_score, target_is_real=True, is_disc=False)
             losses['adv_loss'] = loss_adv
