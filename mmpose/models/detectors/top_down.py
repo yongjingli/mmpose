@@ -36,6 +36,9 @@ class TopDown(BasePose):
                  pretrained=None,
                  loss_pose=None):
         super().__init__()
+        
+        # lyj add
+        self.export = False        
 
         self.backbone = builder.build_backbone(backbone)
 
@@ -100,12 +103,27 @@ class TopDown(BasePose):
             dict|tuple: if `return loss` is true, then return losses.
               Otherwise, return predicted poses, boxes and image paths.
         """
+        if self.export:
+            return self.forward_export(img)      
+        
         if return_loss:
             return self.forward_train(img, target, target_weight, img_metas,
                                       **kwargs)
         else:
             return self.forward_test(img, img_metas, **kwargs)
+        
+    def forward_export(self, img):
+        # assert img.size(0) == 1
 
+        # compute output
+        output = self.backbone(img)
+        if self.with_keypoint:
+            output = self.keypoint_head(output)
+
+        if isinstance(output, list):
+            output = output[-1]
+        return output 
+        
     def forward_train(self, img, target, target_weight, img_metas, **kwargs):
         """Defines the computation performed at every call when training."""
         output = self.backbone(img)
