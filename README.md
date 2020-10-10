@@ -1,6 +1,6 @@
 ## Updata by YongjingLi
 1. add onnx export in ./mmpose/models/detectors/top_down.py, modify for onnx export and tensorrt
-2. add mmpose_detector.py, for mmpose infer
+2. add mmpose_detector.py, for mmpose infer and onnx export
 3. add mmpose_detector_onnx.py, for onnx infer
 
 
