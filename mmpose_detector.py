@@ -13,6 +13,7 @@ import torch
 class PoseDetector():
     def __init__(self, pose_c, pose_w, device):
         self.model_w = pose_w
+        self.device = device
         self.pose_model = init_pose_model(pose_c, pose_w, device)
         self.pose_model.export = True    # set export and return convolution result
         self.dst_w = 192
@@ -172,6 +173,9 @@ class PoseDetector():
                 self.img_t = F.normalize(self.img_t, mean=self.mean, std=self.std)  # NormalizeTensor
                 self.img_t = self.img_t.unsqueeze(0)
 
+                if 'cpu' not in self.device:
+                    self.img_t = self.img_t.cuda()
+
                 output = self.pose_model(self.img_t)  # forward
                 preds, maxvals = PoseDetector.keypoints_from_heatmaps(output.clone().cpu().numpy(), [center],\
                                                                       [scale], post_process=True, unbiased=False)
@@ -241,7 +245,6 @@ if __name__ == "__main__":
 
     cv2.namedWindow("img", 0)
     cv2.imshow("img", img)
-
     wait_key = cv2.waitKey(0)
     if wait_key == 0:
         exit(1)
